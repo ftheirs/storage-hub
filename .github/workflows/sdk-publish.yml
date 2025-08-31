@@ -1,0 +1,88 @@
+name: Publish SDK (core + msp-client)
+
+on:
+  release:
+    types: [published, edited]
+    tags:
+      - "sdk-v[0-9]+(\\.[0-9]+)*"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      is_published_event: ${{ steps.set_is_published.outputs.is_published_event }}
+    steps:
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#sdk-v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "Invalid tag format: $TAG"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set published event flag
+        id: set_is_published
+        run: |
+          if [ "${{ github.event.action }}" = "published" ]; then
+            echo "is_published_event=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_published_event=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: prepare
+    if: needs.prepare.outputs.is_published_event == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      NODE_AUTH_TOKEN: ${{ secrets.SH_SDK_PUBLISH_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@storagehub-sdk'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.12.1
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked
+
+      - name: Install deps (sdk workspace)
+        working-directory: sdk
+        run: pnpm install --frozen-lockfile
+
+      - name: Build wasm
+        working-directory: sdk
+        run: pnpm --filter ./core run build:wasm
+
+      - name: Bump versions from tag
+        run: |
+          jq --arg v "$VERSION" '.version=$v' sdk/core/package.json > sdk/core/package.json.tmp && mv sdk/core/package.json.tmp sdk/core/package.json
+          jq --arg v "$VERSION" '.version=$v' sdk/msp-client/package.json > sdk/msp-client/package.json.tmp && mv sdk/msp-client/package.json.tmp sdk/msp-client/package.json
+
+      - name: Build packages
+        working-directory: sdk
+        run: pnpm run build
+
+      - name: Preflight dry-run publish
+        working-directory: sdk
+        run: pnpm publish -r --filter ./core --filter ./msp-client --dry-run
+
+      - name: Publish packages
+        working-directory: sdk
+        run: pnpm publish -r --filter ./core --filter ./msp-client --access public
+
