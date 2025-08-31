@@ -93,6 +93,11 @@ jobs:
           target: wasm32-unknown-unknown
           cache: false
 
+      - name: Setup Protobuf (protoc)
+        uses: arduino/setup-protoc@v2
+        with:
+          version: '25.x'
+
       - name: Install wasm-pack
         run: curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
 
@@ -114,7 +119,7 @@ jobs:
       - name: Run backend (mocks)
         run: |
           nohup bash -lc "./target/debug/sh-msp-backend --host 127.0.0.1 --port 8080 > /dev/null 2>&1 &"
-          sleep 2
+          sleep 5
 
       - name: Install Playwright Chromium with system deps (sdk/e2e)
         working-directory: sdk/e2e
