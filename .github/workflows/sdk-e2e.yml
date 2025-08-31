@@ -75,7 +75,6 @@ jobs:
   e2e-msp-web:
     name: MSP E2E (web, mocks)
     runs-on: ubuntu-latest
-    needs: e2e-tests
     env:
       HEADLESS: 'false'
       RUST_LOG: info
@@ -109,17 +108,13 @@ jobs:
         working-directory: sdk
         run: pnpm build
 
-      - name: Start backend (mocks)
-        run: nohup bash -lc "cargo run --bin sh-msp-backend --features mocks -- --host 127.0.0.1 --port 8080 &"
+      - name: Build backend (mocks)
+        run: cargo build --bin sh-msp-backend --features mocks
 
-      - name: Wait for backend health
+      - name: Run backend (mocks)
         run: |
-          for i in {1..60}; do
-            curl -fsS http://127.0.0.1:8080/health && exit 0
-            sleep 2
-          done
-          echo "Backend did not become healthy" >&2
-          exit 1
+          nohup bash -lc "./target/debug/sh-msp-backend --host 127.0.0.1 --port 8080 > /dev/null 2>&1 &"
+          sleep 2
 
       - name: Install Playwright Chromium with system deps (sdk/e2e)
         working-directory: sdk/e2e
