@@ -103,11 +103,7 @@ jobs:
 
       - name: Install dependencies (sdk workspace, no scripts)
         working-directory: sdk
-        run: pnpm install --no-frozen-lockfile --ignore-scripts
-
-      - name: Build core WASM pkg
-        working-directory: sdk/core
-        run: pnpm run build:wasm
+        run: pnpm install
 
       - name: Build SDK (core dist + types + msp-client)
         working-directory: sdk
@@ -121,13 +117,17 @@ jobs:
           nohup bash -lc "./target/debug/sh-msp-backend --host 127.0.0.1 --port 8080 > /dev/null 2>&1 &"
           sleep 5
 
+      - name: Install e2e deps (sdk/e2e)
+        working-directory: sdk/e2e
+        run: pnpm install
+
       - name: Install Playwright Chromium with system deps (sdk/e2e)
         working-directory: sdk/e2e
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run MSP E2E (web)
         working-directory: sdk/e2e
-        run: pnpm test:msp -- tests/msp/web-page.spec.ts
+        run: xvfb-run -a pnpm exec playwright test --project msp
 
       - name: Upload Playwright report (MSP)
         if: failure()
