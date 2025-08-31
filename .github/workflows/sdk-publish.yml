@@ -37,7 +37,6 @@ jobs:
     if: needs.prepare.outputs.is_published_event == 'true'
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ needs.prepare.outputs.version }}
       NODE_AUTH_TOKEN: ${{ secrets.SH_SDK_PUBLISH_TOKEN }}
     steps:
       - name: Checkout
@@ -69,10 +68,6 @@ jobs:
         working-directory: sdk
         run: pnpm --filter ./core run build:wasm
 
-      - name: Bump versions from tag
-        run: |
-          jq --arg v "$VERSION" '.version=$v' sdk/core/package.json > sdk/core/package.json.tmp && mv sdk/core/package.json.tmp sdk/core/package.json
-          jq --arg v "$VERSION" '.version=$v' sdk/msp-client/package.json > sdk/msp-client/package.json.tmp && mv sdk/msp-client/package.json.tmp sdk/msp-client/package.json
 
       - name: Build packages
         working-directory: sdk
@@ -80,9 +75,9 @@ jobs:
 
       - name: Preflight dry-run publish
         working-directory: sdk
-        run: pnpm publish -r --filter ./core --filter ./msp-client --dry-run
+        run: pnpm publish -r --filter ./core --filter ./msp-client --dry-run --no-git-checks
 
       - name: Publish packages
         working-directory: sdk
-        run: pnpm publish -r --filter ./core --filter ./msp-client --access public
+        run: pnpm publish -r --filter ./core --filter ./msp-client --access public --no-git-checks
 
