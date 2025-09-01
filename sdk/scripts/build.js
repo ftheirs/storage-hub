@@ -12,7 +12,7 @@ await build({
     minify: true,
     target: ['es2022'],
     platform: 'browser',
-    external: ['ethers', '@storagehub/wasm'],
+    external: ['ethers'],
     format: 'esm',
 });
 

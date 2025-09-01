@@ -30,7 +30,6 @@
     },
     "dependencies": {
         "@polkadot/types": "^10.10.3",
-        "@storagehub/wasm": "file:./wasm/pkg",
         "ethers": "^6.15.0"
     },
     "devDependencies": {
