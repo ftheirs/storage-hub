@@ -1,17 +1,22 @@
 {
-    "name": "@storagehub-sdk/core",
+    "name": "@ftheirs/core",
     "version": "0.1.0",
     "description": "Core primitives for StorageHub SDK (types, crypto, filemanager, storage, wasm bindings)",
     "type": "module",
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    },
     "files": [
         "dist",
         "wasm/pkg"
     ],
     "scripts": {
         "build": "node ../scripts/build.js",
+        "build:types": "tsc --emitDeclarationOnly -p tsconfig.json",
         "dev": "node ../scripts/build.js --watch",
         "lint": "eslint \"{src/**/*.ts,src/**/*.tsx}\"",
         "format": "prettier --write \"{src/**/*.ts,src/**/*.tsx}\"",
