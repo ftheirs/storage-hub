@@ -36,7 +36,7 @@
         "typecheck": "tsc --noEmit",
         "coverage": "vitest run --coverage",
         "build:wasm": "wasm-pack build ./wasm --target web --release --out-dir pkg",
-        "prepublishOnly": "pnpm run build:wasm"
+        "prepublishOnly": "pnpm run build:wasm && pnpm run build"
     },
     "dependencies": {
         "@polkadot/types": "^10.10.3",
