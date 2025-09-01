@@ -1,32 +1,45 @@
 name: Publish SDK (core + msp-client)
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish for packages (e.g., 0.1.0)"
+        required: true
+        type: string
   release:
     types: [published, edited]
-    tags:
-      - "sdk-v[0-9]+(\\.[0-9]+)*"
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ steps.determine_version.outputs.version }}
       is_published_event: ${{ steps.set_is_published.outputs.is_published_event }}
     steps:
-      - name: Extract version from tag
-        id: get_version
+      - name: Determine version
+        id: determine_version
         run: |
-          TAG="${{ github.event.release.tag_name }}"
-          VERSION="${TAG#sdk-v}"
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-            echo "Invalid tag format: $TAG"; exit 1
+          EVENT_NAME="${{ github.event_name }}"
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          if [ "$EVENT_NAME" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#sdk-v}"
+          else
+            VERSION="$INPUT_VERSION"
           fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "Invalid version: $VERSION"; exit 1
+          fi
+          echo "Using version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set published event flag
         id: set_is_published
         run: |
-          if [ "${{ github.event.action }}" = "published" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "is_published_event=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.action }}" = "published" ]; then
             echo "is_published_event=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_published_event=false" >> "$GITHUB_OUTPUT"
@@ -36,48 +49,74 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.is_published_event == 'true'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk
     env:
+      VERSION: ${{ needs.prepare.outputs.version }}
       NODE_AUTH_TOKEN: ${{ secrets.SH_SDK_PUBLISH_TOKEN }}
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.x'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@storagehub-sdk'
-
+      # Node & pnpm setup
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8.12.1
+          version: 8
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@storagehub-sdk'
+
+      # Rust toolchain with wasm target
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: wasm32-unknown-unknown
+          override: true
+
+      # Cache wasm-pack binary
+      - name: Cache wasm-pack
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: wasm-pack-v0.12.1
 
       - name: Install wasm-pack
-        run: cargo install wasm-pack --locked
+        run: |
+          if ! command -v wasm-pack >/dev/null; then
+            cargo install wasm-pack --locked
+          fi
 
-      - name: Install deps (sdk workspace)
-        working-directory: sdk
+      # Install dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Build wasm for core
       - name: Build wasm
-        working-directory: sdk
         run: pnpm --filter ./core run build:wasm
 
+      # Set both package versions from input (no commit)
+      - name: Set versions (no commit)
+        run: |
+          jq --arg v "$VERSION" '.version=$v' core/package.json > core/package.json.tmp && mv core/package.json.tmp core/package.json
+          jq --arg v "$VERSION" '.version=$v' msp-client/package.json > msp-client/package.json.tmp && mv msp-client/package.json.tmp msp-client/package.json
 
+      # Build packages
       - name: Build packages
-        working-directory: sdk
         run: pnpm run build
 
+      # Preflight publish (dry-run)
       - name: Preflight dry-run publish
-        working-directory: sdk
         run: pnpm publish -r --filter ./core --filter ./msp-client --dry-run --no-git-checks
 
+      # Publish packages
       - name: Publish packages
-        working-directory: sdk
         run: pnpm publish -r --filter ./core --filter ./msp-client --access public --no-git-checks
 
