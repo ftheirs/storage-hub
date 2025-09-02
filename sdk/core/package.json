@@ -1,5 +1,5 @@
 {
-    "name": "@storagehub-sdk/core",
+    "name": "@ftheirs/core",
     "version": "0.1.0",
     "description": "Core primitives for StorageHub SDK (types, crypto, filemanager, storage, wasm bindings)",
     "type": "module",

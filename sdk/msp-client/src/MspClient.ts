@@ -7,8 +7,8 @@ import type {
   UploadReceipt,
   VerifyResponse,
 } from './types.js';
-import type { HttpClientConfig } from '@storagehub-sdk/core';
-import { HttpClient } from '@storagehub-sdk/core';
+import type { HttpClientConfig } from '@ftheirs/core';
+import { HttpClient } from '@ftheirs/core';
 
 export class MspClient {
   public readonly config: HttpClientConfig;
