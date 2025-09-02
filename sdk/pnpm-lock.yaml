@@ -75,7 +75,7 @@ importers:
 
   msp-client:
     dependencies:
-      '@storagehub-sdk/core':
+      '@ftheirs/core':
         specifier: workspace:*
         version: link:../core
 
