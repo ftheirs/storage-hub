@@ -1,12 +1,10 @@
-// Minimal demo for @storagehub-sdk/msp-client
-// Requirements: Node >= 22
-
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { MspClient } from '@storagehub-sdk/msp-client';
-import { LocalWallet } from '@storagehub-sdk/core';
+import { LocalWallet, initWasm } from '@storagehub-sdk/core';
 
 async function main() {
+  await initWasm();
   const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:8080';
   const chainId = Number(process.env.CHAIN_ID || '1');
 
