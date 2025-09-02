@@ -1,7 +1,7 @@
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable } from 'node:stream';
-import { MspClient } from '@storagehub-sdk/msp-client';
-import { LocalWallet, initWasm } from '@storagehub-sdk/core';
+import { MspClient } from '@ftheirs/msp-client';
+import { LocalWallet, initWasm } from '@ftheirs/core';
 
 async function main() {
   await initWasm();

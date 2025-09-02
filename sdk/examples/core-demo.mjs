@@ -1,6 +1,6 @@
 import { createReadStream, statSync } from 'node:fs';
 import { Readable } from 'node:stream';
-import { HttpClient, LocalWallet, FileManager, initWasm } from '@storagehub-sdk/core';
+import { HttpClient, LocalWallet, FileManager, initWasm } from '@ftheirs/core';
 
 async function main() {
   await initWasm();

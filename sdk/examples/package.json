@@ -10,7 +10,7 @@
     "msp": "node msp-demo.mjs"
   },
   "dependencies": {
-    "@storagehub-sdk/core": "^0.1.0",
-    "@storagehub-sdk/msp-client": "^0.1.0"
+    "@ftheirs/core": "^0.1.0",
+    "@ftheirs/msp-client": "^0.1.0"
   }
 }
