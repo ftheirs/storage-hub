@@ -8,8 +8,6 @@
     "types": "./dist/index.d.ts",
     "exports": {
         ".": "./dist/index.js",
-        "./wasm/pkg/storagehub_wasm.js": "./wasm/pkg/storagehub_wasm.js",
-        "./wasm/pkg/storagehub_wasm_bg.wasm": "./wasm/pkg/storagehub_wasm_bg.wasm",
         "./wasm/pkg/*": "./wasm/pkg/*"
     },
     "publishConfig": {
