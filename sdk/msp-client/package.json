@@ -1,5 +1,5 @@
 {
-  "name": "@storagehub-sdk/msp-client",
+  "name": "@ftheirs/msp-client",
   "version": "0.1.0",
   "description": "High-level façade around @storagehub-sdk/core for easy StorageHub integration",
   "type": "module",
@@ -35,7 +35,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@storagehub-sdk/core": "workspace:*"
+    "@ftheirs/core": "workspace:*"
   },
   "engines": {
     "node": ">=22"
