@@ -11,6 +11,9 @@ importers:
       '@eslint/eslintrc':
         specifier: 2.1.4
         version: 2.1.4
+      '@storagehub-sdk/core':
+        specifier: workspace:*
+        version: link:core
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.37.0
         version: 8.41.0(@typescript-eslint/parser@8.41.0(eslint@9.34.0(jiti@2.5.1))(typescript@5.5.4))(eslint@9.34.0(jiti@2.5.1))(typescript@5.5.4)
@@ -139,10 +142,10 @@ importers:
         version: 5.5.4
 
   msp-client:
-    devDependencies:
+    dependencies:
       '@storagehub-sdk/core':
-        specifier: workspace:*
-        version: link:../core
+        specifier: '>=0.0.4'
+        version: 0.0.4
 
 packages:
 
@@ -989,6 +992,10 @@ packages:
 
   '@storagehub-sdk/core@0.0.3':
     resolution: {integrity: sha512-D1Y9cwNvm/oPUYL2hBqU6AAFI7Zzwhvp5FHe05bzcT+ETK8hNQxkqJK6eh7xsu7EX6glMCqjqAbe3njBQ1qqBQ==}
+    engines: {node: '>=22'}
+
+  '@storagehub-sdk/core@0.0.4':
+    resolution: {integrity: sha512-zm7U9Qld0FdUidq4KZuc1mVZWJ5rEul7vqAjNhDZogE4JJr2hGbPoj3KCxykwAoQ3SP5IrklcR/BC6DtzbqK8g==}
     engines: {node: '>=22'}
 
   '@storagehub-sdk/msp-client@0.0.3':
@@ -2917,6 +2924,14 @@ snapshots:
   '@scure/base@1.2.6': {}
 
   '@storagehub-sdk/core@0.0.3':
+    dependencies:
+      '@polkadot/types': 10.13.1
+      ethers: 6.15.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@storagehub-sdk/core@0.0.4':
     dependencies:
       '@polkadot/types': 10.13.1
       ethers: 6.15.0
