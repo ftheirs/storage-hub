@@ -1,8 +1,8 @@
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable } from 'node:stream';
-import { Bucket, MspClient, type FileListResponse } from '@storagehub-sdk/msp-client';
-import { LocalWallet, initWasm } from '@storagehub-sdk/core';
-import type { VerifyResponse, UploadReceipt } from '@storagehub-sdk/msp-client';
+import { Bucket, MspClient, type FileListResponse } from '@ftheirs/msp-client';
+import { LocalWallet, initWasm } from '@ftheirs/core';
+import type { VerifyResponse, UploadReceipt } from '@ftheirs/msp-client';
 
 export async function runMspDemo(): Promise<void> {
   // Initialize embedded WASM once

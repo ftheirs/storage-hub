@@ -9,7 +9,7 @@
     "declarationDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@storagehub-sdk/core": [
+      "@ftheirs/core": [
         "../core/dist"
       ]
     }

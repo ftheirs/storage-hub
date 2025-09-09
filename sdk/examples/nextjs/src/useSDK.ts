@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { MspClient } from '@storagehub-sdk/msp-client';
-import { FileManager } from '@storagehub-sdk/core';
+import { MspClient } from '@ftheirs/msp-client';
+import { FileManager } from '@ftheirs/core';
 
 export const useSDK = (): string => {
   const [status, setStatus] = useState<string>("Initializing SDK...");

@@ -10,8 +10,8 @@ import type {
   UploadReceipt,
   VerifyResponse,
 } from './types.js';
-import type { HttpClientConfig } from '@storagehub-sdk/core';
-import { HttpClient } from '@storagehub-sdk/core';
+import type { HttpClientConfig } from '@ftheirs/core';
+import { HttpClient } from '@ftheirs/core';
 
 export class MspClient {
   public readonly config: HttpClientConfig;
@@ -140,16 +140,16 @@ export class MspClient {
         path,
         authHeaders
           ? {
-              body: file,
-              headers: {
-                ...authHeaders,
-                'Content-Type': 'application/octet-stream',
-              },
-            }
-          : {
-              body: file,
-              headers: { 'Content-Type': 'application/octet-stream' },
+            body: file,
+            headers: {
+              ...authHeaders,
+              'Content-Type': 'application/octet-stream',
             },
+          }
+          : {
+            body: file,
+            headers: { 'Content-Type': 'application/octet-stream' },
+          },
       );
       return res;
     }
