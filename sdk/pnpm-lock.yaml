@@ -84,15 +84,15 @@ importers:
 
   examples/nextjs:
     dependencies:
+      '@ftheirs/core':
+        specifier: '>=0.0.5'
+        version: 2.1.0
+      '@ftheirs/msp-client':
+        specifier: '>=0.0.5'
+        version: 2.1.0(@ftheirs/core@2.1.0)
       '@polkadot/types':
         specifier: ^16.4.7
         version: 16.4.7
-      '@storagehub-sdk/core':
-        specifier: '>=0.0.5'
-        version: 0.0.5
-      '@storagehub-sdk/msp-client':
-        specifier: '>=0.0.5'
-        version: 0.0.5(@storagehub-sdk/core@0.0.5)
       ethers:
         specifier: ^6.15.0
         version: 6.15.0
@@ -127,12 +127,12 @@ importers:
 
   examples/node:
     dependencies:
-      '@storagehub-sdk/core':
+      '@ftheirs/core':
         specifier: '>=0.0.5'
-        version: 0.0.5
-      '@storagehub-sdk/msp-client':
+        version: 2.1.0
+      '@ftheirs/msp-client':
         specifier: '>=0.0.5'
-        version: 0.0.5(@storagehub-sdk/core@0.0.5)
+        version: 2.1.0(@ftheirs/core@2.1.0)
       ethers:
         specifier: ^6.15.0
         version: 6.15.0
@@ -149,7 +149,7 @@ importers:
 
   msp-client:
     devDependencies:
-      '@storagehub-sdk/core':
+      '@ftheirs/core':
         specifier: workspace:*
         version: link:../core
 
@@ -390,6 +390,16 @@ packages:
   '@eslint/plugin-kit@0.3.5':
     resolution: {integrity: sha512-Z5kJ+wU3oA7MMIqVR9tyZRtjYPr4OC004Q4Rw7pgOKUOKkJfZ3O24nz3WYfGRpMDNmcOi3TwQOmgm7B7Tpii0w==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@ftheirs/core@2.1.0':
+    resolution: {integrity: sha512-2IRDiy3vUsMyq1MIC+3S4D2YYyhsygD/i9ROI0doZHu6kBPXyJBVUvl3bQwPl2YD/Hj3762Uj/jw0XLwVWVp2Q==}
+    engines: {node: '>=22'}
+
+  '@ftheirs/msp-client@2.1.0':
+    resolution: {integrity: sha512-F5WwvRxB3xQS+COjwtsGoFBgekaY+s0wS1tu3N4JjROZTbvZE5R9csWbrC12kplzv3R9S5QYYD4kQdc3giGGiQ==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@ftheirs/core': '>=0.0.5'
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -928,16 +938,6 @@ packages:
 
   '@scure/bip39@1.6.0':
     resolution: {integrity: sha512-+lF0BbLiJNwVlev4eKelw1WWLaiKXw7sSl8T6FvBlWkdX+94aGJ4o8XjUdlyhTCjd8c+B3KT3JfS8P0bLRNU6A==}
-
-  '@storagehub-sdk/core@0.0.5':
-    resolution: {integrity: sha512-8YNFNuWv7K3tlRf//Bw2Puri/eEmZV5hiQQaAuFhW/J83icbZ3YUzoTtiKoXclE78YVarNx4X+2wafzwPVYv9g==}
-    engines: {node: '>=22'}
-
-  '@storagehub-sdk/msp-client@0.0.5':
-    resolution: {integrity: sha512-ZAXgu7SMB3GIGBwf4QKwU1qw0yVPq/ajPYjz8gtY9hO2RKA36T6J4C199eDWnsZz7vAfAJIkn0Kg63bXLlhl9A==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      '@storagehub-sdk/core': '>=0.0.4'
 
   '@substrate/ss58-registry@1.51.0':
     resolution: {integrity: sha512-TWDurLiPxndFgKjVavCniytBIw+t4ViOi7TYp9h/D0NMmkEc9klFTo+827eyEJ0lELpqO207Ey7uGxUa+BS1jQ==}
@@ -2462,6 +2462,18 @@ snapshots:
       '@eslint/core': 0.15.2
       levn: 0.4.1
 
+  '@ftheirs/core@2.1.0':
+    dependencies:
+      '@polkadot/types': 10.13.1
+      ethers: 6.15.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@ftheirs/msp-client@2.1.0(@ftheirs/core@2.1.0)':
+    dependencies:
+      '@ftheirs/core': 2.1.0
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -3004,18 +3016,6 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
-
-  '@storagehub-sdk/core@0.0.5':
-    dependencies:
-      '@polkadot/types': 10.13.1
-      ethers: 6.15.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@storagehub-sdk/msp-client@0.0.5(@storagehub-sdk/core@0.0.5)':
-    dependencies:
-      '@storagehub-sdk/core': 0.0.5
 
   '@substrate/ss58-registry@1.51.0': {}
 
