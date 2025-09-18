@@ -14,8 +14,8 @@ import type {
   ValueProp,
   VerifyResponse,
 } from './types.js';
-import type { HttpClientConfig } from '@storagehub-sdk/core';
-import { FileMetadata, FileTrie, HttpClient, initWasm } from '@storagehub-sdk/core';
+import type { HttpClientConfig } from '@ftheirs/core';
+import { FileMetadata, FileTrie, HttpClient, initWasm } from '@ftheirs/core';
 
 export class MspClient {
   public readonly config: HttpClientConfig;

@@ -1,6 +1,6 @@
 import { createReadStream, statSync } from 'node:fs';
 import { Readable } from 'node:stream';
-import { HttpClient, LocalWallet, FileManager, initWasm } from '@storagehub-sdk/core';
+import { HttpClient, LocalWallet, FileManager, initWasm } from '@ftheirs/core';
 import { H256 } from '@polkadot/types/interfaces';
 
 export async function runCoreDemo(): Promise<void> {

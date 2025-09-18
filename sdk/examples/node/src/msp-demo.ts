@@ -11,9 +11,9 @@ import {
   type ValueProp,
   type DownloadResult,
   type FileInfo,
-} from '@storagehub-sdk/msp-client';
-import { LocalWallet, initWasm } from '@storagehub-sdk/core';
-import type { VerifyResponse, UploadReceipt } from '@storagehub-sdk/msp-client';
+} from '@ftheirs/msp-client';
+import { LocalWallet, initWasm } from '@ftheirs/core';
+import type { VerifyResponse, UploadReceipt } from '@ftheirs/msp-client';
 
 export async function runMspDemo(): Promise<void> {
   // Initialize embedded WASM once

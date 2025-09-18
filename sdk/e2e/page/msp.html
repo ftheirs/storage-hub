@@ -8,8 +8,8 @@
   <script type="importmap">
     {
       "imports": {
-        "@storagehub-sdk/msp-client": "/msp-client/dist/index.browser.js",
-        "@storagehub-sdk/core": "/core/dist/index.browser.js",
+        "@ftheirs/msp-client": "/msp-client/dist/index.browser.js",
+        "@ftheirs/core": "/core/dist/index.browser.js",
         "@polkadot/types": "https://cdn.jsdelivr.net/npm/@polkadot/types@10.9.1/+esm",
         "@polkadot/types/interfaces": "https://cdn.jsdelivr.net/npm/@polkadot/types@10.9.1/interfaces/+esm",
         "ethers": "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm",
@@ -294,7 +294,7 @@
     async function ensureConnected() {
       const baseUrl = 'http://127.0.0.1:8080';
       if (client && connectedBaseUrl === baseUrl) return client;
-      const { MspClient } = await import('@storagehub-sdk/msp-client');
+      const { MspClient } = await import('@ftheirs/msp-client');
       client = await MspClient.connect({ baseUrl, timeoutMs: 60000 });
       connectedBaseUrl = baseUrl;
       return client;
@@ -303,7 +303,7 @@
     // Optional: initialize WASM (for core types if needed by the browser)
     (async () => {
       try {
-        const { initWasm } = await import('@storagehub-sdk/core');
+        const { initWasm } = await import('@ftheirs/core');
         await initWasm();
         console.log('WASM ready');
       } catch (e) {
@@ -348,7 +348,7 @@
         // Auto-fill a valid address if none/invalid is provided
         const isValidEth = /^0x[a-fA-F0-9]{40}$/.test(address);
         if (!isValidEth) {
-          const { LocalWallet } = await import('@storagehub-sdk/core');
+          const { LocalWallet } = await import('@ftheirs/core');
           const wallet = LocalWallet.fromMnemonic('test test test test test test test test test test test junk');
           address = await wallet.getAddress();
           const addrInput = document.getElementById('address');
@@ -371,7 +371,7 @@
         setStatus('Signing message...');
         const msg = window.__msp.message;
         if (!msg) throw new Error('No message to sign. Click Get Nonce first.');
-        const { LocalWallet } = await import('@storagehub-sdk/core');
+        const { LocalWallet } = await import('@ftheirs/core');
         const wallet = LocalWallet.fromMnemonic('test test test test test test test test test test test junk');
         const address = await wallet.getAddress();
         const sig = await wallet.signMessage(msg);
@@ -433,7 +433,7 @@
         const blob = await loadAdolphusBlob();
         const metadata = await client.formFileMetadata(owner, bucketId, location, adolphusFingerprint, BigInt(blob.size));
         const fileKey = '0x' + Array.from(await client.computeFileKey(metadata)).map(b => b.toString(16).padStart(2, '0')).join('');
-        
+
         // Use a valid-looking mock JWT for mocked backend
         const jwt = generateMockJwt();
         client.setToken(jwt);
