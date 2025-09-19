@@ -48,7 +48,7 @@ jobs:
           BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
           HEAD_SHA="${{ github.sha }}"
 
-          if [[ "${{ env.SKIP_BUILD_LABEL_PRESENT }}" != "true" ]] && git diff --name-only $BASE_SHA $HEAD_SHA | grep -E '^(client|node|pallets|runtime)/|^Cargo\.toml$'; then
+          if [[ "${{ env.SKIP_BUILD_LABEL_PRESENT }}" != "true" ]] && git diff --name-only $BASE_SHA $HEAD_SHA | grep -E '^(node|pallets|runtime)/|^Cargo\.toml$'; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "Comparing changes from $BASE_SHA to $HEAD_SHA"
@@ -544,15 +544,17 @@ jobs:
         with:
           name: backend-bin
           path: target/release/
-      - name: Get Node Binary if changed
+      - name: Get Node Binary from artifact
         if: needs.setup.outputs.node_changed == 'true'
         uses: actions/download-artifact@v4
         with:
           name: node
           path: target/release/
-      - name: Get Latest Node Binary if not changed
-        if: needs.setup.outputs.node_changed == 'false'
+        continue-on-error: true
+      - name: Get Node Binary from Docker (fallback or default)
+        if: needs.setup.outputs.node_changed == 'false' || failure()
         run: |
+          echo "Using latest Docker image for node binary..."
           docker pull moonsonglabs/storage-hub:latest
           docker create --name temp_storage_hub moonsonglabs/storage-hub:latest
           docker cp temp_storage_hub:/usr/local/bin/storage-hub-node target/release/storage-hub-node
