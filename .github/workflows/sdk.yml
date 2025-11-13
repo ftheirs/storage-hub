@@ -25,7 +25,7 @@ env:
 jobs:
   setup:
     name: Setup SDK CI/CD
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.determine_version.outputs.version }}
       is_published_event: ${{ steps.set_is_published.outputs.is_published_event }}
@@ -64,7 +64,7 @@ jobs:
   sdk-build-and-test:
     name: SDK Build and Test
     needs: [setup]
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: sdk
@@ -135,7 +135,7 @@ jobs:
   e2e-wallet-metamask:
     needs: [sdk-build-and-test]
     name: E2E Wallet Tests (MetaMask)
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -180,7 +180,7 @@ jobs:
   e2e-backend-msp:
     needs: [sdk-build-and-test]
     name: E2E Backend Tests (MSP Client)
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     env:
       HEADLESS: "false"
       RUST_LOG: info
@@ -262,7 +262,7 @@ jobs:
   check-published-install:
     name: Check published install (Next.js)
     needs: [sdk-build-and-test]
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     env:
       CI: "true"
     steps:
@@ -289,7 +289,7 @@ jobs:
     name: Publish SDK (core + msp-client)
     needs: [setup]
     if: needs.setup.outputs.is_published_event == 'true'
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: sdk

@@ -9,7 +9,7 @@
 #
 # Notes:
 # - Requires Docker Hub credentials to push images
-# - Uses Blacksmith runners for performance
+# - Uses native GitHub runners (ubuntu-24.04)
 # - Employs sccache and mold for fast Rust builds
 
 name: StorageHub Network CI/CD
@@ -33,7 +33,7 @@ on:
 
 jobs:
   setup:
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     outputs:
       node_changed: ${{ steps.node_check.outputs.changed }}
       backend_changed: ${{ steps.backend_check.outputs.changed }}
@@ -115,7 +115,7 @@ jobs:
   build_node:
     needs: [setup]
     name: "Build node binary if changed"
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -175,7 +175,7 @@ jobs:
   build_backend:
     needs: [setup]
     name: "Build backend binary if changed"
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -233,7 +233,7 @@ jobs:
     needs: [build_node, setup]
     if: needs.setup.outputs.node_changed == 'true' || needs.setup.outputs.force_node == 'true'
     name: "Push node Docker image to Docker Hub"
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Download node binary from artefacts
@@ -250,15 +250,15 @@ jobs:
           echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-      - name: Setup Blacksmith Builder
-        uses: useblacksmith/setup-docker-builder@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build Docker image and push it to Docker Hub
-        uses: useblacksmith/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/storage-hub-node.Dockerfile
@@ -277,7 +277,7 @@ jobs:
     needs: [build_backend, setup]
     if: needs.setup.outputs.backend_changed == 'true' || needs.setup.outputs.force_backend == 'true'
     name: "Push backend Docker image to Docker Hub"
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Download backend binary from artefacts
@@ -294,15 +294,15 @@ jobs:
           echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-      - name: Set up Blacksmith Builder
-        uses: useblacksmith/setup-docker-builder@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build Docker image and push it to Docker Hub
-        uses: useblacksmith/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/storage-hub-msp-backend.Dockerfile
@@ -320,7 +320,7 @@ jobs:
   # zombie_test_k8:
   #   needs: [build_node, setup]
   #   name: "Test Simple Network"
-  #   runs-on: blacksmith-16vcpu-ubuntu-2404
+  #   runs-on: ubuntu-24.04
   #   env:
   #     SH_IMAGE: ${{ needs.setup.outputs.image-tag }}
   #   defaults:
@@ -346,7 +346,7 @@ jobs:
   network_test:
     needs: [build_node, setup]
     name: "Network Test: Zombienet (Parachain + Relay)"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -387,7 +387,7 @@ jobs:
     needs: [build_node, setup]
     name: "Network Test: Zombienet CLI"
     timeout-minutes: 30
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflow-templates/setup-pnpm
@@ -421,7 +421,7 @@ jobs:
     needs: [build_node, setup]
     timeout-minutes: 30
     name: "Node Tests: Solo Dev Node"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -469,7 +469,7 @@ jobs:
   full_net:
     needs: [build_node, setup]
     name: "Integration Tests: FullNet"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -560,7 +560,7 @@ jobs:
   bsp_net:
     needs: [build_node, setup]
     name: "Integration Tests: BSPNet"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -648,7 +648,7 @@ jobs:
   backend_test:
     needs: [build_node, build_backend, setup]
     name: "Integration Tests: Backend"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -767,7 +767,7 @@ jobs:
   user_net:
     needs: [build_node, setup]
     name: "Integration Tests: User"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -858,7 +858,7 @@ jobs:
   fisherman_test:
     needs: [build_node, setup]
     name: "Integration Tests: Fisherman"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -944,7 +944,7 @@ jobs:
   solochain_evm:
     needs: [build_node, build_backend, setup]
     name: "Integration Tests: Solochain EVM"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -1072,7 +1072,7 @@ jobs:
   typegen_check:
     needs: [build_node, setup]
     name: "Check Rust/TS bindings are up to date"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflow-templates/setup-pnpm
