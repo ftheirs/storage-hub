@@ -1,10 +1,11 @@
 import assert, { strictEqual } from "node:assert";
-import { type EnrichedBspApi, describeMspNet } from "../../../util";
+import type { u64, u128 } from "@polkadot/types";
+import type { H256 } from "@polkadot/types/interfaces";
+import { describeMspNet, type EnrichedBspApi } from "../../../util";
+import { BACKEND_URI } from "../../../util/backend/consts";
 import { fetchJwtToken, type PaymentStreamsResponse } from "../../../util/backend";
 import { SH_EVM_SOLOCHAIN_CHAIN_ID } from "../../../util/evmNet/consts";
-import { ETH_SH_USER_PRIVATE_KEY, ETH_SH_USER_ADDRESS } from "../../../util/evmNet/keyring";
-import type { H256 } from "@polkadot/types/interfaces";
-import type { u128, u64 } from "@polkadot/types";
+import { ETH_SH_USER_ADDRESS, ETH_SH_USER_PRIVATE_KEY } from "../../../util/evmNet/keyring";
 
 type OnChainPaymentStream = { provider: string; user: `0x${string}` } & (
   | { type: "fixed"; rate: u128 }
@@ -36,7 +37,7 @@ await describeMspNet(
 
     it("Postgres DB is ready", async () => {
       await userApi.docker.waitForLog({
-        containerName: "storage-hub-sh-postgres-1",
+        containerName: userApi.shConsts.NODE_INFOS.indexerDb.containerName,
         searchString: "database system is ready to accept connections",
         timeout: 10000
       });
@@ -44,7 +45,7 @@ await describeMspNet(
 
     it("Backend service is ready", async () => {
       await userApi.docker.waitForLog({
-        containerName: "storage-hub-sh-backend-1",
+        containerName: userApi.shConsts.NODE_INFOS.backend.containerName,
         searchString: "Server listening",
         timeout: 10000
       });
@@ -119,7 +120,7 @@ await describeMspNet(
 
       const userJWT = await fetchJwtToken(ETH_SH_USER_PRIVATE_KEY, SH_EVM_SOLOCHAIN_CHAIN_ID);
 
-      const response = await fetch("http://localhost:8080/payment_streams", {
+      const response = await fetch(`${BACKEND_URI}/payment_streams`, {
         headers: {
           Authorization: `Bearer ${userJWT}`
         }

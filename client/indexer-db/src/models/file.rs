@@ -10,7 +10,7 @@ use shc_common::types::{FileMetadata, Fingerprint};
 
 use crate::{
     models::{Bucket, MultiAddress},
-    schema::{bucket, file, file_peer_id},
+    schema::{bucket, file, file_peer_id, msp_file},
     DbConnection,
 };
 
@@ -92,6 +92,21 @@ pub struct File {
     ///
     /// Used for FIFO ordering of deletion processing by fisherman nodes.
     pub deletion_requested_at: Option<NaiveDateTime>,
+    /// Whether the file is currently in the bucket's forest.
+    ///
+    /// Updated based on [`MutationsApplied`](pallet_proofs_dealer::Event::MutationsApplied) events:
+    /// - Set to `true` when an `Add` mutation is applied for this file in the bucket
+    /// - Set to `false` when a `Remove` mutation is applied for this file in the bucket
+    pub is_in_bucket: bool,
+    /// Block hash where the file was created.
+    ///
+    /// Contains the block hash where the `NewStorageRequest` event was emitted.
+    pub block_hash: Vec<u8>,
+    /// Transaction hash that created this file (for EVM-originated storage requests).
+    ///
+    /// Contains the Ethereum transaction hash from `pallet_ethereum::Event::Executed` if the storage
+    /// request was created via an EVM transaction. NULL for native Substrate transactions.
+    pub tx_hash: Option<Vec<u8>>,
 }
 
 /// Association table between File and PeerId
@@ -116,6 +131,8 @@ impl File {
         size: i64,
         step: FileStorageRequestStep,
         peer_ids: Vec<crate::models::PeerId>,
+        block_hash: Vec<u8>,
+        tx_hash: Option<Vec<u8>>,
     ) -> Result<Self, diesel::result::Error> {
         let file = diesel::insert_into(file::table)
             .values((
@@ -129,6 +146,9 @@ impl File {
                 file::step.eq(step as i32),
                 file::deletion_status.eq(None::<i32>),
                 file::deletion_signature.eq(None::<Vec<u8>>),
+                file::is_in_bucket.eq(false),
+                file::block_hash.eq(block_hash),
+                file::tx_hash.eq(tx_hash),
             ))
             .returning(File::as_select())
             .get_result(conn)
@@ -254,8 +274,6 @@ impl File {
         conn: &mut DbConnection<'a>,
         file_key: impl AsRef<[u8]>,
     ) -> Result<bool, diesel::result::Error> {
-        use crate::schema::msp_file;
-
         let file_key = file_key.as_ref().to_vec();
 
         // Get file ID
@@ -307,27 +325,39 @@ impl File {
         }
     }
 
-    /// Delete file only if it has no provider associations (orphaned)
+    /// Delete file only if it has no BSP associations and is not in the bucket forest.
+    /// The flag [`is_in_bucket`](File::is_in_bucket) is set to false or true based on the [`MutationsApplied`] event emitted by the proofs dealer pallet for catch all.
     pub async fn delete_if_orphaned<'a>(
         conn: &mut DbConnection<'a>,
         file_key: impl AsRef<[u8]>,
     ) -> Result<bool, diesel::result::Error> {
         let file_key = file_key.as_ref();
 
-        // Check if file has any associations
-        let has_msp = Self::has_msp_associations(conn, file_key).await?;
-        let has_bsp = Self::has_bsp_associations(conn, file_key).await?;
+        // Check if file is still in bucket forest or has BSP associations
+        let file_record: Option<Self> = file::table
+            .filter(file::file_key.eq(file_key))
+            .first(conn)
+            .await
+            .optional()?;
 
-        if !has_msp && !has_bsp {
-            // No associations, delete the file
+        let Some(file_record) = file_record else {
+            // File doesn't exist, nothing to delete
+            return Ok(false);
+        };
+
+        let has_bsp = Self::has_bsp_associations(conn, file_key).await?;
+        let is_in_bucket = file_record.is_in_bucket;
+
+        if !is_in_bucket && !has_bsp {
+            // File is not in bucket forest and has no BSP associations, safe to delete
             Self::delete(conn, file_key).await?;
-            log::info!("Deleted orphaned file with key: {:?}", file_key);
+            log::debug!("Deleted orphaned file key: {:?}", file_key);
             Ok(true)
         } else {
             log::debug!(
-                "File with key {:?} still has associations (MSP: {}, BSP: {}), keeping it",
+                "File with key {:?} still has storage (in_bucket: {}, BSP: {}), keeping it",
                 file_key,
-                has_msp,
+                is_in_bucket,
                 has_bsp
             );
             Ok(false)
@@ -436,13 +466,19 @@ impl File {
     pub async fn get_all_file_keys_for_bucket<'a>(
         conn: &mut DbConnection<'a>,
         onchain_bucket_id: &[u8],
+        is_in_bucket: Option<bool>,
     ) -> Result<Vec<Vec<u8>>, diesel::result::Error> {
-        let file_keys: Vec<Vec<u8>> = file::table
+        let mut query = file::table
             .inner_join(bucket::table.on(file::bucket_id.eq(bucket::id)))
             .filter(bucket::onchain_bucket_id.eq(onchain_bucket_id))
-            .select(file::file_key)
-            .load::<Vec<u8>>(conn)
-            .await?;
+            .into_boxed();
+
+        // Filter by is_in_bucket if provided
+        if let Some(is_in_bucket_value) = is_in_bucket {
+            query = query.filter(file::is_in_bucket.eq(is_in_bucket_value));
+        }
+
+        let file_keys: Vec<Vec<u8>> = query.select(file::file_key).load::<Vec<u8>>(conn).await?;
 
         Ok(file_keys)
     }
@@ -527,9 +563,13 @@ impl File {
     /// `onchain_bucket_id`. The deletion type determines whether to include files
     /// with or without user signatures.
     ///
+    /// Returns all files in buckets regardless of MSP acceptance status, since bucket
+    /// deletions are concerned with the bucket's forest state, not MSP storage associations.
+    ///
     /// # Arguments
     /// * `deletion_type` - Filter for user deletions (with signature) or incomplete deletions (without signature)
     /// * `bucket_id` - Optional filter by specific bucket's onchain ID (returns only that bucket's files)
+    /// * `is_in_bucket` - Optional filter by whether files are in the bucket's forest (None = all files)
     /// * `limit` - Maximum number of files to return across all buckets (default: 1000)
     /// * `offset` - Number of files to skip for pagination (default: 0)
     ///
@@ -543,6 +583,7 @@ impl File {
         conn: &mut DbConnection<'a>,
         deletion_type: FileDeletionType,
         bucket_id: Option<&[u8]>,
+        is_in_bucket: Option<bool>,
         limit: Option<i64>,
         offset: Option<i64>,
     ) -> Result<HashMap<Vec<u8>, Vec<Self>>, diesel::result::Error> {
@@ -563,6 +604,11 @@ impl File {
         // Filter by specific bucket ID if provided
         if let Some(bucket_id) = bucket_id {
             query = query.filter(file::onchain_bucket_id.eq(bucket_id));
+        }
+
+        // Filter by `is_in_bucket` if provided
+        if let Some(is_in_bucket_value) = is_in_bucket {
+            query = query.filter(file::is_in_bucket.eq(is_in_bucket_value));
         }
 
         let files: Vec<Self> = query
@@ -587,6 +633,30 @@ impl File {
         }
 
         Ok(grouped)
+    }
+
+    /// Update the bucket membership status for a file.
+    ///
+    /// Updates `is_in_bucket` based on mutations applied to the bucket's forest.
+    /// The file is identified by both `file_key` and `onchain_bucket_id` to ensure
+    /// we're updating the correct file-bucket relationship.
+    pub async fn update_bucket_membership<'a>(
+        conn: &mut DbConnection<'a>,
+        file_key: impl AsRef<[u8]>,
+        onchain_bucket_id: impl AsRef<[u8]>,
+        is_in_bucket: bool,
+    ) -> Result<(), diesel::result::Error> {
+        let file_key = file_key.as_ref().to_vec();
+        let onchain_bucket_id = onchain_bucket_id.as_ref().to_vec();
+
+        diesel::update(file::table)
+            .filter(file::file_key.eq(&file_key))
+            .filter(file::onchain_bucket_id.eq(&onchain_bucket_id))
+            .set(file::is_in_bucket.eq(is_in_bucket))
+            .execute(conn)
+            .await?;
+
+        Ok(())
     }
 }
 
